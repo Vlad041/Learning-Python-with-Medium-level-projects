@@ -1,0 +1,60 @@
+from random import choice
+
+
+def game():
+    uname = input('Enter your name: ')
+    print('Hello, {}'.format(uname))
+    score = 0
+    file = open('rating.txt', 'r')
+    for line in file:
+        if uname in line:
+            n, s = line.split(' ')
+            score = s
+    choices = input()
+    if len(choices.strip()) == 0:
+        choices = ['scissors', 'rock', 'paper']
+    else:
+        choices = choices.split(',')
+    total = []
+    play(choices, score, total)
+
+
+def play(choices, score, total):
+    print('Okay, let\'s start')
+    while True:
+        u_won = []
+        u_lost = []
+        total = []
+        user_move = str(input())
+        comp_move = choice(choices)
+        options_left = list(choices)
+        comp_i = options_left.index(comp_move)
+        lst_len = len(options_left) // 2
+        if len(options_left[comp_i + 1:]) >= lst_len:
+            u_won.append(options_left[comp_i + 1:comp_i + lst_len + 1])
+            u_lost.append(options_left[:comp_i])
+            u_lost.append(options_left[:[len(i) for i in u_lost][0] - lst_len - 1:- 1])
+        elif len(options_left[:comp_i - 1]) >= lst_len:
+            u_lost.append(options_left[comp_i - lst_len:comp_i:])
+            u_won.append(options_left[comp_i + 1:])
+            u_won.append(options_left[:lst_len - [len(i) for i in u_won][0]])
+        for i in u_won:
+            if user_move in i:
+                print('Well done. Computer chose ' + comp_move + ' and failed')
+                score += 100
+        for i in u_lost:
+            if user_move in i:
+                print('Sorry, but computer chose ' + comp_move)
+        if user_move == '!exit':
+            print('Bye!')
+            break
+        elif user_move == '!rating':
+            print('Your rating: {}'.format(score))
+        elif user_move not in choices:
+            print('Invalid input')
+        elif user_move == comp_move:
+            print('There is a draw (' + comp_move + ')')
+            score += 50
+
+
+game()
