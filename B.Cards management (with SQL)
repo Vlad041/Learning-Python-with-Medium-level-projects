@@ -1,20 +1,20 @@
 import random
 import _sqlite3
 conn = _sqlite3.connect('card.s3db')
-cur = conn.cursor()
-cur.execute('DROP TABLE card')
+c = conn.cursor()
+c.execute('DROP TABLE card')
 conn.commit()
 
 
 class BankingSystem:
     def __init__(self):
         self.cards = []
-        cur.execute('CREATE TABLE card ('
-                    'id INTEGER,'
-                    'number TEXT,'
-                    'pin TEXT,'
-                    'balance INTEGER DEFAULT 0'
-                    ');')
+        c.execute('CREATE TABLE card ('
+                  'id INTEGER,'
+                  'number TEXT,'
+                  'pin TEXT,'
+                  'balance INTEGER DEFAULT 0'
+                  ');')
         conn.commit()
         self.id = 0
 
@@ -33,15 +33,13 @@ class BankingSystem:
         card_number = ''.join(str(x) for x in ([400000] + card_number + [0] + [x]))
         card_pin = ''.join(str(x) for x in (random.sample(range(0, 10), 4)))
         self.id += 1
-        print(self.id)
         print('\nYour card has been created \n'
               'Your card number:\n'
               '{}\n'
               'Your card PIN:\n'
               '{}\n'.format(card_number, card_pin))
         self.cards.append((self.id, card_number, card_pin))
-        print(self.cards[self.id - 1])
-        cur.execute('INSERT INTO card(id, number, pin) VALUES (?, ?, ?)', self.cards[self.id - 1])
+        c.execute('INSERT INTO card(id, number, pin) VALUES (?, ?, ?)', self.cards[self.id - 1])
         conn.commit()
 
     def account(self):
@@ -60,7 +58,10 @@ class BankingSystem:
     def login(self):
         user_number = input('\nEnter your card number\n')
         user_pin = input('Enter your PIN\n')
-        if (user_number, user_pin) in self.cards:
+        c.execute('SELECT number, pin FROM card')
+        row = c.fetchone()
+        print(row)
+        if user_number == row[0] and user_pin == row[1]:
             print('\nYou have successfully logged in!')
             self.menu()
         else:
@@ -82,3 +83,4 @@ class BankingSystem:
 
 start = BankingSystem()
 start.account()
+
