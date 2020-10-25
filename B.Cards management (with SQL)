@@ -60,7 +60,6 @@ class BankingSystem:
         user_pin = input('Enter your PIN\n')
         c.execute('SELECT number, pin FROM card')
         row = c.fetchone()
-        print(row)
         if user_number == row[0] and user_pin == row[1]:
             print('\nYou have successfully logged in!')
             self.menu()
@@ -73,7 +72,9 @@ class BankingSystem:
                                 '2. Log out\n'
                                 '0. Exit:\n')
             if menu_choice == 1:
-                print(self.balance)
+                c.execute('SELECT balance FROM card')
+                balance = c.fetchone()
+                print(balance)
             elif menu_choice == 2:
                 self.account()
             elif menu_choice == 0:
@@ -83,4 +84,3 @@ class BankingSystem:
 
 start = BankingSystem()
 start.account()
-
