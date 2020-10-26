@@ -1,7 +1,8 @@
 import random
 import _sqlite3
-conn = _sqlite3.connect('card.s3db')
+conn = _sqlite3.connect('card.s3db', timeout=20)
 c = conn.cursor()
+c.execute('DROP TABLE card')
 conn.commit()
 
 
@@ -77,15 +78,14 @@ class BankingSystem:
     def login(self):
         user_number = input('\nEnter your card number\n')
         user_pin = input('Enter your PIN\n')
-        c.execute('SELECT * FROM card WHERE number = ?', [user_number])
-        row = c.fetchone()
-        print(row)
-        if row and user_number == row[1] and user_pin == row[2]:
-            print('\nYou have successfully logged in!')
-            self.current_card_number = user_number
-            self.menu()
-        else:
-            print('Wrong card number or PIN!')
+        print(self.cards)  # DELETE
+        for i in self.cards:
+            if i[1] == user_number and i[2] == user_pin:
+                print('You have successfully logged in!')
+                self.current_id = i[0]
+                self.menu()
+            else:
+                print('Wrong card number or PIN!')
 
     def income(self):
         add = int(input('Enter income:\n'))
@@ -118,9 +118,16 @@ class BankingSystem:
                 print(res)
                 conn.commit()
                 print('Success!')
-                print(self.current_card_number)
-                c.execute('UPDATE card SET balance = ? WHERE number = ?', [result[3] - add_money, self.current_card_number])
-                c.execute('SELECT * FROM card WHERE number = ?', [self.current_card_number])
+                print(self.card_number)  # DELETE
+                print(self.current_id)  # DELETE
+                c.execute('SELECT balance FROM card WHERE id = ?', [self.current_id])  # DELETE
+                resk = c.fetchone()  # DELETE
+                updated_balance = resk[0] + add_money
+                print(updated_balance)  # DELETE
+                c.execute('UPDATE card SET balance = ? WHERE id = ?', [updated_balance, self.current_id])
+                c.execute('SELECT * FROM card WHERE id = ?', [self.current_id])  # DELETE
+                resa = c.fetchone()  # DELETE
+                print(resa)  # DELETE
                 conn.commit()
         elif self.valid is False:
             print('Probably you made a mistake in the card number. Please try again!')
@@ -161,3 +168,4 @@ class BankingSystem:
 
 start = BankingSystem()
 start.account()
+
