@@ -2,14 +2,13 @@ import random
 import _sqlite3
 conn = _sqlite3.connect('card.s3db')
 c = conn.cursor()
-c.execute('DROP TABLE card')
 conn.commit()
 
 
 class BankingSystem:
     def __init__(self):
         self.cards = []
-        c.execute('CREATE TABLE card ('
+        c.execute('CREATE TABLE IF NOT EXISTS card ('
                   'id INTEGER,'
                   'number TEXT,'
                   'pin TEXT,'
@@ -17,11 +16,31 @@ class BankingSystem:
                   ');')
         conn.commit()
         self.id = 0
+        self.current_id = None
+        self.card_number = None
+        self.valid = False
+        self.current_card_number = None
+
+    def luhn(self):
+        card_num = [int(x) for x in self.card_number]
+        luhn_numbers = card_num[:15]
+        odd = luhn_numbers[0::2]
+        numbers = luhn_numbers[1::2]
+        odd_mltpl = [i * 2 for i in odd]
+        odd_minus = [i - 9 for i in odd_mltpl if i > 9]
+        odd_extra = [i for i in odd_mltpl if i <= 9]
+        numbers += odd_minus + odd_extra
+        checksum = sum(numbers)
+        check_digit = (checksum * 9) % 10
+        if check_digit == card_num[15]:
+            self.valid = True
+        else:
+            self.valid = False
 
     def create(self):
-        card_number = random.sample(range(0, 10), 8)
-        odd = [card_number[i] for i in [0, 2, 4, 6]]
-        numbers = [card_number[i] for i in [1, 3, 5, 7]]
+        self.card_number = random.sample(range(0, 10), 8)
+        odd = [self.card_number[i] for i in [0, 2, 4, 6]]
+        numbers = [self.card_number[i] for i in [1, 3, 5, 7]]
         odd_mltpl = [i * 2 for i in odd]
         odd_minus = [i - 9 for i in odd_mltpl if i > 9]
         odd_extra = [i for i in odd_mltpl if i <= 9]
@@ -30,15 +49,15 @@ class BankingSystem:
         x = 0
         while (checksum + x) % 10 != 0:
             x += 1
-        card_number = ''.join(str(x) for x in ([400000] + card_number + [0] + [x]))
+        self.card_number = ''.join(str(x) for x in ([400000] + self.card_number + [0] + [x]))
         card_pin = ''.join(str(x) for x in (random.sample(range(0, 10), 4)))
         self.id += 1
         print('\nYour card has been created \n'
               'Your card number:\n'
               '{}\n'
               'Your card PIN:\n'
-              '{}\n'.format(card_number, card_pin))
-        self.cards.append((self.id, card_number, card_pin))
+              '{}\n'.format(self.card_number, card_pin))
+        self.cards.append((self.id, self.card_number, card_pin))
         c.execute('INSERT INTO card(id, number, pin) VALUES (?, ?, ?)', self.cards[self.id - 1])
         conn.commit()
 
@@ -58,25 +77,83 @@ class BankingSystem:
     def login(self):
         user_number = input('\nEnter your card number\n')
         user_pin = input('Enter your PIN\n')
-        c.execute('SELECT number, pin FROM card')
+        c.execute('SELECT * FROM card WHERE number = ?', [user_number])
         row = c.fetchone()
-        if user_number == row[0] and user_pin == row[1]:
+        print(row)
+        if row and user_number == row[1] and user_pin == row[2]:
             print('\nYou have successfully logged in!')
+            self.current_card_number = user_number
             self.menu()
         else:
             print('Wrong card number or PIN!')
 
+    def income(self):
+        add = int(input('Enter income:\n'))
+        c.execute('SELECT balance FROM card WHERE number = ?', [self.card_number])
+        initial_balance = c.fetchone()
+        current_balance = initial_balance[0] + add
+        c.execute('UPDATE card SET balance = ? WHERE number = ?', [current_balance, self.card_number])
+        conn.commit()
+        print(current_balance)
+        print('Income was added!')
+        c.execute('SELECT * FROM card WHERE number = ?', [self.card_number])
+        result = c.fetchone()
+        print(result)
+        self.menu()
+
+    def transfer(self):
+        self.card_number = input('\nTransfer\nEnter card number:\n')
+        self.luhn()
+        c.execute('SELECT * FROM card WHERE number = ?', [self.card_number])
+        result = c.fetchone()
+        if result:
+            print(result)
+            add_money = int(input('Enter how much money you want to transfer:\n'))
+            if add_money > result[3]:
+                print('Not enough money!')
+            else:
+                c.execute('UPDATE card SET balance = ? WHERE number = ?', [result[3] - add_money, self.card_number])
+                c.execute('SELECT * FROM card WHERE number = ?', [self.card_number])
+                res = c.fetchone()
+                print(res)
+                conn.commit()
+                print('Success!')
+                print(self.current_card_number)
+                c.execute('UPDATE card SET balance = ? WHERE number = ?', [result[3] - add_money, self.current_card_number])
+                c.execute('SELECT * FROM card WHERE number = ?', [self.current_card_number])
+                conn.commit()
+        elif self.valid is False:
+            print('Probably you made a mistake in the card number. Please try again!')
+        elif self.valid is True:
+            print('Such a card does not exist.')
+        self.menu()
+
+    def close_acc(self):
+        print('hi')
+
+    def logout(self):
+        print('hi')
+
     def menu(self):
         while True:
-            menu_choice = input('\n1. Balance:\n'
-                                '2. Log out\n'
-                                '0. Exit:\n')
+            menu_choice = int(input('\n1. Balance:\n'
+                                    '2. Add income\n'
+                                    '3. Do transfer\n'
+                                    '4. Close account\n'
+                                    '5. Log out\n'
+                                    '0. Exit:\n'))
             if menu_choice == 1:
                 c.execute('SELECT balance FROM card')
                 balance = c.fetchone()
                 print(balance)
             elif menu_choice == 2:
-                self.account()
+                self.income()
+            elif menu_choice == 3:
+                self.transfer()
+            elif menu_choice == 4:
+                self.close_acc()
+            elif menu_choice == 5:
+                self.logout()
             elif menu_choice == 0:
                 print('\nBye!')
             exit()
