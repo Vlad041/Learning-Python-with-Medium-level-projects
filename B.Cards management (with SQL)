@@ -118,16 +118,10 @@ class BankingSystem:
                 print(res)
                 conn.commit()
                 print('Success!')
-                print(self.card_number)  # DELETE
-                print(self.current_id)  # DELETE
                 c.execute('SELECT balance FROM card WHERE id = ?', [self.current_id])  # DELETE
-                resk = c.fetchone()  # DELETE
+                resk = c.fetchone()
                 updated_balance = resk[0] + add_money
-                print(updated_balance)  # DELETE
                 c.execute('UPDATE card SET balance = ? WHERE id = ?', [updated_balance, self.current_id])
-                c.execute('SELECT * FROM card WHERE id = ?', [self.current_id])  # DELETE
-                resa = c.fetchone()  # DELETE
-                print(resa)  # DELETE
                 conn.commit()
         elif self.valid is False:
             print('Probably you made a mistake in the card number. Please try again!')
@@ -136,7 +130,10 @@ class BankingSystem:
         self.menu()
 
     def close_acc(self):
-        print('hi')
+        c.execute('DELETE FROM card WHERE id = ?', [self.current_id])
+        print('\nThe account has been closed!')
+        conn.commit()
+        self.menu()
 
     def logout(self):
         print('hi')
@@ -168,4 +165,3 @@ class BankingSystem:
 
 start = BankingSystem()
 start.account()
-
