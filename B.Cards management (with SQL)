@@ -20,7 +20,6 @@ class BankingSystem:
         self.current_id = None
         self.card_number = None
         self.valid = False
-        self.current_card_number = None
 
     def luhn(self):
         card_num = [int(x) for x in self.card_number]
@@ -40,8 +39,8 @@ class BankingSystem:
 
     def create(self):
         self.card_number = random.sample(range(0, 10), 8)
-        odd = [self.card_number[i] for i in [0, 2, 4, 6]]
-        numbers = [self.card_number[i] for i in [1, 3, 5, 7]]
+        odd = self.card_number[0::2]
+        numbers = self.card_number[1::2]
         odd_mltpl = [i * 2 for i in odd]
         odd_minus = [i - 9 for i in odd_mltpl if i > 9]
         odd_extra = [i for i in odd_mltpl if i <= 9]
@@ -78,7 +77,6 @@ class BankingSystem:
     def login(self):
         user_number = input('\nEnter your card number\n')
         user_pin = input('Enter your PIN\n')
-        print(self.cards)  # DELETE
         for i in self.cards:
             if i[1] == user_number and i[2] == user_pin:
                 print('You have successfully logged in!')
@@ -96,9 +94,6 @@ class BankingSystem:
         conn.commit()
         print(current_balance)
         print('Income was added!')
-        c.execute('SELECT * FROM card WHERE number = ?', [self.card_number])
-        result = c.fetchone()
-        print(result)
         self.menu()
 
     def transfer(self):
@@ -113,12 +108,9 @@ class BankingSystem:
                 print('Not enough money!')
             else:
                 c.execute('UPDATE card SET balance = ? WHERE number = ?', [result[3] - add_money, self.card_number])
-                c.execute('SELECT * FROM card WHERE number = ?', [self.card_number])
-                res = c.fetchone()
-                print(res)
                 conn.commit()
                 print('Success!')
-                c.execute('SELECT balance FROM card WHERE id = ?', [self.current_id])  # DELETE
+                c.execute('SELECT balance FROM card WHERE id = ?', [self.current_id])
                 resk = c.fetchone()
                 updated_balance = resk[0] + add_money
                 c.execute('UPDATE card SET balance = ? WHERE id = ?', [updated_balance, self.current_id])
@@ -134,9 +126,6 @@ class BankingSystem:
         print('\nThe account has been closed!')
         conn.commit()
         self.menu()
-
-    def logout(self):
-        print('hi')
 
     def menu(self):
         while True:
@@ -157,7 +146,7 @@ class BankingSystem:
             elif menu_choice == 4:
                 self.close_acc()
             elif menu_choice == 5:
-                self.logout()
+                self.login()
             elif menu_choice == 0:
                 print('\nBye!')
             exit()
